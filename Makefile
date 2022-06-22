@@ -1,3 +1,6 @@
+debug: src/main.c src/rules.h
+	cc -o lispy src/main.c lib/mpc/mpc.c -std=c99 -Wall -Ilib -ledit -lm -g
+
 all: src/main.c src/rules.h
 	cc src/main.c lib/mpc/mpc.c -std=c99 -Wall -Ilib -ledit -lm -o lispy
 
