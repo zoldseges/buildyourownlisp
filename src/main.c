@@ -111,6 +111,9 @@ int main(int argc, char *argv[]) {
 
   mpca_lang(MPCA_LANG_DEFAULT, (const char *)src_rules_txt,
 	    Number, Operator, Expr, Program);
+  char rules[src_rules_txt_len+1];
+  for(int i = 0; i < src_rules_txt_len; ++i) rules[i] = src_rules_txt[i];
+  rules[src_rules_txt_len] = '\0';
 
   puts("Lispy Version 0.0.1");
   puts("Press Ctrl+c to Exit\n");
