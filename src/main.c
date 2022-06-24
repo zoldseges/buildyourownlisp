@@ -7,28 +7,93 @@
 
 #include "rules.h"
 
-long eval_op(char *op, long x, long y) {
-  if(!strcmp(op, "+")) {
-    return x + y;
-  } else if (!strcmp(op, "-")) {
-    return x - y;
-  } else if (!strcmp(op, "*")) {
-    return x * y;
-  } else if (!strcmp(op, "/")) {
-    return x / y;
-  } else {
-    fprintf(stderr, "Couldn't evaluate operator: `%s`\n", op);
-    exit(1);
+typedef struct {
+  int type;
+  long num;
+  int err;
+} lval;
+
+// types
+enum {
+  LVAL_NUM,
+  LVAL_ERR
+};
+
+// errors
+enum {
+  LERR_DIV_ZERO,
+  LERR_BAD_OP,
+  LERR_BAD_NUM,
+};
+
+lval lval_num(long x) {
+  lval v;
+  v.type = LVAL_NUM;
+  v.num = x;
+  return v;
+}
+
+lval lval_err(int e) {
+  lval v;
+  v.type = LVAL_ERR;
+  v.err = e;
+  return v;
+}
+
+void lval_print(lval v) {
+  switch (v.type) {
+  case LVAL_NUM:
+    printf("%li", v.num);
+    break;
+
+  case LVAL_ERR:
+    switch (v.err) {
+    case LERR_DIV_ZERO:
+      printf("Error: Division by Zero!");
+      break;
+    case LERR_BAD_OP:
+      printf("Error: Invalid Operator!");
+      break;
+    case LERR_BAD_NUM:
+      printf("Error: Invalid Number!");
+      break;
+    }
   }
 }
 
-long eval(mpc_ast_t *t) {
+void lval_println(lval v) {
+  lval_print(v);
+  putchar('\n');
+}
+
+lval eval_op(char *op, lval x, lval y) {
+  if (x.type == LVAL_ERR) return x;
+  if (y.type == LVAL_ERR) return y;
+
+  if(!strcmp(op, "+")) {
+    return lval_num(x.num + y.num);
+  } else if (!strcmp(op, "-")) {
+    return lval_num(x.num - y.num);
+  } else if (!strcmp(op, "*")) {
+    return lval_num(x.num * y.num);
+  } else if (!strcmp(op, "/")) {
+    return y.num == 0
+      ? lval_err(LERR_DIV_ZERO)
+      : lval_num(x.num / y.num);
+  } else {
+    return lval_err(LERR_BAD_OP);
+  }
+}
+
+lval eval(mpc_ast_t *t) {
   if (strstr(t->tag, "number")) {
-    return atoi(t->contents);
+    errno = 0;
+    long x = strtol(t->contents, NULL, 10);
+    return errno == ERANGE ? lval_err(LERR_BAD_NUM) : lval_num(x);
   }
 
   char *op = t->children[1]->contents;
-  long x = eval(t->children[2]);
+  lval x = eval(t->children[2]);
 
   for(int i = 3; strstr(t->children[i]->tag, "expr"); ++i) {
     x = eval_op(op, x, eval(t->children[i]));
@@ -63,7 +128,8 @@ int main(int argc, char *argv[]) {
     add_history(input);
 
     if (mpc_parse("<stdin>", input, Program, &r)) {
-      printf("%li\n", eval(r.output));
+      lval result = eval(r.output);
+      lval_println(result);
       mpc_ast_delete(r.output);
     } else {
       mpc_err_print(r.error);
