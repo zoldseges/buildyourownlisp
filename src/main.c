@@ -122,8 +122,8 @@ lval *lval_read(mpc_ast_t* t) {
 
   for (int i = 0; i < t->children_num; i++) {
     if (!strcmp(t->children[i]->tag, "regex")
-	|| !strcmp(t->children[i]->contents, "(")
-	|| !strcmp(t->children[i]->contents, ")")
+	|| t->children[i]->contents[0] == '('
+	|| t->children[i]->contents[0] == ')'
 	) {
       continue;
     }
@@ -133,13 +133,13 @@ lval *lval_read(mpc_ast_t* t) {
   return x;
 }
 
-void lval_expr_print(lval *v) {
-  putchar('(');
+void lval_expr_print(lval *v, char open, char close) {
+  putchar(open);
   for (int i = 0; i < v->count; ++i) {
     if (i != 0) putchar(' ');
     lval_print(v->cell[i]);
   }
-  putchar(')');
+  putchar(close);
 }
 
 void lval_print(lval *v) {
@@ -147,7 +147,7 @@ void lval_print(lval *v) {
   case LVAL_NUM		: printf("%li", v->num);	break;
   case LVAL_ERR		: printf("Error: %s", v->err);	break;
   case LVAL_SYM		: printf("%s", v->sym);		break;
-  case LVAL_SEXPR	: lval_expr_print(v);		break;
+  case LVAL_SEXPR	: lval_expr_print(v, '(', ')'); break;
   }
 }
 
@@ -196,7 +196,7 @@ lval *builtin_op(lval *a, char *op) {
   }
 
   lval *x = lval_pop(a, 0);
-  if ((strcmp(op, "-") == 0) && a->count == 0) {
+  if (op[0] == '-' && a->count == 0) {
     x->num = -x->num;
   }
 
