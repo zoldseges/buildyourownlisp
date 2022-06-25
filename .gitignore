@@ -1,3 +1,4 @@
 lispy
 src/rules.h
 TAGS
+.gdbinit
